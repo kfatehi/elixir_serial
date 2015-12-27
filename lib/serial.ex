@@ -23,6 +23,10 @@ defmodule Serial do
     GenServer.start_link(__MODULE__, self(), opts)
   end
 
+  def stop(pid) do
+    GenServer.call(pid, :stop)
+  end
+
   @doc """
   Opens a connection to the given tty.
   """
@@ -93,6 +97,13 @@ defmodule Serial do
     exec = :code.priv_dir(:serial) ++ '/serial'
     port = Port.open({:spawn_executable, exec}, [{:args, ['-erlang']}, :binary, {:packet, 2}])
     {:ok, {pid, port}}
+  end
+
+  def handle_call(:stop, _from, {_pid, port} = state) do
+    #Port.command(port, [@disconnect])
+    Port.command(port, [@close])
+    Port.close(port)
+    {:stop, :normal, :ok, state}
   end
 
   def handle_call({:open, tty}, _from, {_pid, port} = state) do
