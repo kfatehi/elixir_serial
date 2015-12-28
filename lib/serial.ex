@@ -95,6 +95,7 @@ defmodule Serial do
 
   def init(pid) do
     exec = :code.priv_dir(:serial) ++ '/serial'
+    Process.flag(:trap_exit, true)
     port = Port.open({:spawn_executable, exec}, [{:args, ['-erlang']}, :binary, {:packet, 2}])
     {:ok, {pid, port}}
   end
@@ -125,6 +126,11 @@ defmodule Serial do
 
   def handle_info({port, {:data, data}}, {pid, port} = state) do
     send(pid, {:elixir_serial, self(), data})
+    {:noreply, state}
+  end
+
+  def handle_info({:EXIT, port, reason}, {_pid, _port} = state) do
+    raise "Serial Port exited unexpectedly"
     {:noreply, state}
   end
 end
